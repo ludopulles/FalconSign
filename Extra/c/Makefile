@@ -53,7 +53,7 @@ LIBS = #-lm
 
 OBJ = codec.o common.o falcon.o fft.o fpr.o keygen.o rng.o shake.o sign.o vrfy.o
 
-all: test_falcon speed
+all: test_falcon speed signature_sizes
 
 clean:
 	-rm -f $(OBJ) test_falcon test_falcon.o speed speed.o
@@ -63,6 +63,9 @@ test_falcon: test_falcon.o $(OBJ)
 
 speed: speed.o $(OBJ)
 	$(LD) $(LDFLAGS) -o speed speed.o $(OBJ) $(LIBS)
+
+signature_sizes: signature_sizes.c $(OBJ)
+	$(CC) $(CFLAGS) -o signature_sizes signature_sizes.c $(OBJ) $(LIBS) -lm
 
 codec.o: codec.c config.h inner.h fpr.h
 	$(CC) $(CFLAGS) -c -o codec.o codec.c
