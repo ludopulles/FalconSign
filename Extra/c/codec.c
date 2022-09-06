@@ -318,10 +318,10 @@ Zf(comp_encode)(
 	buf = out;
 
 	/*
-	 * Make sure that all values are within the -2047..+2047 range.
+	 * Make sure that all values are within the -2048..+2047 range.
 	 */
 	for (u = 0; u < n; u ++) {
-		if (x[u] < -2047 || x[u] > +2047) {
+		if (x[u] < -2048 || x[u] > +2047) {
 			return 0;
 		}
 	}
@@ -330,20 +330,15 @@ Zf(comp_encode)(
 	acc_len = 0;
 	v = 0;
 	for (u = 0; u < n; u ++) {
-		int t;
-		unsigned w;
+		uint32_t w;
 
 		/*
 		 * Get sign and absolute value of next integer; push the
 		 * sign bit.
 		 */
-		acc <<= 1;
-		t = x[u];
-		if (t < 0) {
-			t = -t;
-			acc |= 1;
-		}
-		w = (unsigned)t;
+		w = (uint32_t) (int32_t)x[u];
+		acc = (acc << 1) | (w >> 31);
+		w ^= -(w >> 31);
 
 		/*
 		 * Push the low 7 bits of the absolute value.
@@ -417,7 +412,8 @@ Zf(comp_decode)(
 	acc_len = 0;
 	v = 0;
 	for (u = 0; u < n; u ++) {
-		unsigned b, s, m;
+		uint8_t b;
+		unsigned s, m;
 
 		/*
 		 * Get next eight bits: sign and low seven bits of the
@@ -428,8 +424,8 @@ Zf(comp_decode)(
 		}
 		acc = (acc << 8) | (uint32_t)buf[v ++];
 		b = acc >> acc_len;
-		s = b & 128;
-		m = b & 127;
+		s = b >> 7;
+		m = b & 127u;
 
 		/*
 		 * Get next bits until a 1 is reached.
@@ -452,14 +448,7 @@ Zf(comp_decode)(
 			}
 		}
 
-		/*
-		 * "-0" is forbidden.
-		 */
-		if (s && m == 0) {
-			return 0;
-		}
-
-		x[u] = (int16_t)(s ? -(int)m : (int)m);
+		x[u] = (int16_t)(m ^ -s);
 	}
 
 	/*
